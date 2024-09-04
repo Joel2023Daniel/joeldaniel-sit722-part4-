@@ -32,7 +32,7 @@ jobs:
       REGISTRY_UN: ${{ secrets.REGISTRY_UN }}
       REGISTRY_PW: ${{ secrets.REGISTRY_PW  }}
       DATABASE_URL: ${{ secrets.DATABASE_URL  }}
-      NAME: book_catalog
+      NAME: deakin-library
       DIRECTORY: book_catalog
 
     steps:
