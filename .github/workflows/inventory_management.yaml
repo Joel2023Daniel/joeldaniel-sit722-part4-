@@ -41,13 +41,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up permissions for build script
-        run: chmod +x ./scripts/cd/build-image.sh
+        run: chmod +x ./scripts/build-image.sh
 
       - name: Set up permissions for push-image script
-        run: chmod +x ./scripts/cd/push-image.sh
+        run: chmod +x ./scripts/push-image.sh
 
       - name: Set up permissions for deploy script
-        run: chmod +x ./scripts/cd/deploy.sh
+        run: chmod +x ./scripts/deploy.sh
 
       #
       # Builds the Docker image.
