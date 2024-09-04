@@ -1,0 +1,28 @@
+version: '3'
+services:
+
+  deakin-library:
+    image: deakin-library
+    build: 
+      context: ./book_catalog
+      dockerfile: Dockerfile
+    container_name: deakin-library
+    ports:
+     - "4000:4000"
+    environment:
+      - PORT=4000
+      - DATABASE_URL=postgresql://sit722_task8_2c_user:RTKx1lGv5xFbMnqY8OlLyWFUzPfY9aX7@dpg-cr65263tq21c73b9fqa0-a.singapore-postgres.render.com/sit722_task8_2c
+    restart: "no"
+
+  deakin-inventory:
+    image: deakin-inventory
+    build: 
+      context: ./inventory_management
+      dockerfile: Dockerfile
+    container_name: deakin-inventory
+    ports:
+     - "5000:5000"
+    environment:
+      - PORT=5000
+      - DATABASE_URL=postgresql://sit722_task8_2c_user:RTKx1lGv5xFbMnqY8OlLyWFUzPfY9aX7@dpg-cr65263tq21c73b9fqa0-a.singapore-postgres.render.com/sit722_task8_2c
+    restart: "no"
