@@ -40,3 +40,5 @@ def update_book(book_id: int, book: schemas.BookCreate, db: Session = Depends(ge
 @app.delete("/books/{book_id}", response_model=schemas.Book)
 def delete_book(book_id: int, db: Session = Depends(get_db)):
     return crud.delete_book(db=db, book_id=book_id)
+
+#this is a trigger

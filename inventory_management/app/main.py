@@ -40,3 +40,5 @@ def update_inventory(inventory_id: int, inventory: schemas.InventoryCreate, db: 
 @app.delete("/inventories/{inventory_id}", response_model=schemas.Inventory)
 def delete_inventory(inventory_id: int, db: Session = Depends(get_db)):
     return crud.delete_inventory(db=db, inventory_id=inventory_id)
+
+#this is a trigger
