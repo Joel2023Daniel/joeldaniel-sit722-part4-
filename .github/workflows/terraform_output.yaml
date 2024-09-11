@@ -38,9 +38,9 @@ jobs:
       run: terraform init
 
     # Step 5: Terraform Plan (show changes without applying)
-    - name: Terraform Plan
-      working-directory: ./scripts/terraform
-      run: terraform plan
+    #- name: Terraform Plan
+    #  working-directory: ./scripts/terraform
+    #  run: terraform plan
 
     # Step 6: Terraform Apply (apply changes if required)
     - name: Terraform Apply
