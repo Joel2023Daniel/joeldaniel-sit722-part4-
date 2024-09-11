@@ -47,48 +47,32 @@ jobs:
       working-directory: ./scripts/terraform
       run: terraform apply -auto-approve
 
-    # Step 7: Retrieve ACR and AKS outputs after Terraform Apply
+    # Step 7: Retrieve Terraform Outputs
     - name: Get Terraform Outputs
       id: outputs
       working-directory: ./scripts/terraform
       run: |
-        echo "acr_login_url=$(terraform output -raw acr_login_url | grep -v "::debug")" >> $GITHUB_ENV
-        echo "acr_username=$(terraform output -raw acr_username | grep -v "::debug")" >> $GITHUB_ENV
-        echo "acr_password=$(terraform output -raw acr_password | grep -v "::debug")" >> $GITHUB_ENV
-        echo "aks_kubeconfig=$(terraform output -raw aks_kubeconfig | grep -v "::debug")" >> $GITHUB_ENV
+        echo "acr_login_url=$(terraform output -raw acr_login_url)" >> $GITHUB_ENV
+        echo "acr_username=$(terraform output -raw acr_username)" >> $GITHUB_ENV
+        echo "acr_password=$(terraform output -raw acr_password)" >> $GITHUB_ENV
+        echo "aks_kubeconfig=$(terraform output -raw aks_kubeconfig)" >> $GITHUB_ENV
 
-    # Step 8: Convert outputs to GitHub Secrets
+    # Step 8: Install GitHub CLI
+    - name: Install GitHub CLI
+      run: sudo apt-get install gh
+
+    # Step 9: Authenticate GitHub CLI
+    - name: Authenticate GitHub CLI
+      run: gh auth login --with-token
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Step 10: Create GitHub Secrets from Outputs
     - name: Create GitHub Secrets
       run: |
-        # Function to encrypt secrets
-        function create_or_update_secret {
-          local secret_name=$1
-          local secret_value=$2
-          echo "Creating or updating secret: $secret_name"
-          
-          curl -X PUT \
-            -H "Authorization: token ${{ secrets.SECRETS_MODIFY_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"encrypted_value\": \"$secret_value\", \"key_id\": \"$key_id\"}" \
-            https://api.github.com/repos/${{ github.repository }}/actions/secrets/$secret_name
-        }
+        echo "Creating or updating secrets in GitHub repository"
 
-        # Get public key used to encrypt secrets
-        key_response=$(curl -s -H "Authorization: token ${{ secrets.SECRETS_MODIFY_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/actions/secrets/public-key)
-        key_id=$(echo $key_response | jq -r '.key_id')
-        key=$(echo $key_response | jq -r '.key')
-
-        # Encrypt the secrets
-        acr_login_url_encrypted=$(echo "${{ env.acr_login_url }}" | openssl pkeyutl -encrypt -pubin -inkey <(echo "$key") | base64)
-        acr_username_encrypted=$(echo "${{ env.acr_username }}" | openssl pkeyutl -encrypt -pubin -inkey <(echo "$key") | base64)
-        acr_password_encrypted=$(echo "${{ env.acr_password }}" | openssl pkeyutl -encrypt -pubin -inkey <(echo "$key") | base64)
-        aks_kubeconfig_encrypted=$(echo "${{ env.aks_kubeconfig }}" | openssl pkeyutl -encrypt -pubin -inkey <(echo "$key") | base64)
-
-        # Create or update secrets in GitHub repository
-        create_or_update_secret "CONTAINER_REGISTRY" "$acr_login_url_encrypted"
-        create_or_update_secret "REGISTRY_UN" "$acr_username_encrypted"
-        create_or_update_secret "REGISTRY_PW" "$acr_password_encrypted"
-        create_or_update_secret "KUBE_CONFIG" "$aks_kubeconfig_encrypted"
-
-      env:
-        GITHUB_TOKEN: ${{ secrets.SECRETS_MODIFY_TOKEN }}
+        gh secret set CONTAINER_REGISTRY -b "${{ env.acr_login_url }}"
+        gh secret set REGISTRY_UN -b "${{ env.acr_username }}"
+        gh secret set REGISTRY_PW -b "${{ env.acr_password }}"
+        gh secret set KUBE_CONFIG -b "${{ env.aks_kubeconfig }}"
