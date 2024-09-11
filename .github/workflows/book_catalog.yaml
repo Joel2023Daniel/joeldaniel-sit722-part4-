@@ -49,15 +49,7 @@ jobs:
       - name: Set up permissions for deploy script
         run: chmod +x ./scripts/deploy.sh
 
-    # Step 8: Install GitHub CLI
-      - name: Install GitHub CLI
-        run: sudo apt-get install gh
 
-    # Step 9: Authenticate GitHub CLI
-      - name: Authenticate GitHub CLI
-        run: |
-          echo "${{ secrets.SECRETS_MODIFY_TOKEN }}" | gh auth login --with-token
-          
       #
       # Builds the Docker image.
       #
