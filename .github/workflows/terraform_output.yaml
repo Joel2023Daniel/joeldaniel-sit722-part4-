@@ -52,10 +52,10 @@ jobs:
       id: outputs
       working-directory: ./scripts/terraform
       run: |
-        echo "acr_login_url=$(terraform output -raw acr_login_url)" >> $GITHUB_ENV
-        echo "acr_username=$(terraform output -raw acr_username)" >> $GITHUB_ENV
-        echo "acr_password=$(terraform output -raw acr_password)" >> $GITHUB_ENV
-        echo "aks_kubeconfig=$(terraform output -raw aks_kubeconfig)" >> $GITHUB_ENV
+        echo "acr_login_url=$(terraform output -raw acr_login_url | grep -v "::debug")" >> $GITHUB_ENV
+        echo "acr_username=$(terraform output -raw acr_username | grep -v "::debug")" >> $GITHUB_ENV
+        echo "acr_password=$(terraform output -raw acr_password | grep -v "::debug")" >> $GITHUB_ENV
+        echo "aks_kubeconfig=$(terraform output -raw aks_kubeconfig | grep -v "::debug")" >> $GITHUB_ENV
 
     # Step 8: Convert outputs to GitHub Secrets
     - name: Create GitHub Secrets
