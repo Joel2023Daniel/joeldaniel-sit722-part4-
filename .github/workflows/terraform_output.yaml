@@ -63,9 +63,8 @@ jobs:
 
     # Step 9: Authenticate GitHub CLI
     - name: Authenticate GitHub CLI
-      run: gh auth login --with-token
-      env:
-        GH_TOKEN: ${{ secrets.SECRETS_MODIFY_TOKEN }}
+      run: |
+        echo "${{ secrets.SECRETS_MODIFY_TOKEN }}" | gh auth login --with-token
 
     # Step 10: Create GitHub Secrets from Outputs
     - name: Create GitHub Secrets
