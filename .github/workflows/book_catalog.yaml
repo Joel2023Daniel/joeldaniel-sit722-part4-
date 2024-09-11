@@ -49,6 +49,12 @@ jobs:
       - name: Set up permissions for deploy script
         run: chmod +x ./scripts/deploy.sh
 
+      #Run check if secrets appearing correctly
+      - name : Test Check if secrets appearing correctly
+        run: |
+          echo "Container Registry: $CONTAINER_REGISTRY"
+          echo "Registry Username: $REGISTRY_UN"
+
       #
       # Builds the Docker image.
       #
