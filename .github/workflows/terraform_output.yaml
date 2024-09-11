@@ -1,0 +1,94 @@
+name: Terraform Build and Secrets Output
+
+on:
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    name: Terraform Init, Plan, and Apply followins which take relevant values and create Github Secrets
+    runs-on: ubuntu-latest
+
+    # Environment variables for Terraform and Azure
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
+    steps:
+    # Step 1: Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Step 2: Login to Azure
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    # Step 3: Set up Terraform CLI
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.5.6
+
+    # Step 4: Terraform Init (initializes the working directory)
+    - name: Terraform Init
+      working-directory: ./scripts/terraform # Replace with your folder path
+      run: terraform init
+
+    # Step 5: Terraform Plan (show changes without applying)
+    - name: Terraform Plan
+      working-directory: ./scripts/terraform
+      run: terraform plan
+
+    # Step 6: Terraform Apply (apply changes if required)
+    - name: Terraform Apply
+      working-directory: ./scripts/terraform
+      run: terraform apply -auto-approve
+
+    # Step 7: Retrieve ACR and AKS outputs after Terraform Apply
+    - name: Get Terraform Outputs
+      id: outputs
+      working-directory: ./terraform-directory
+      run: |
+        echo "acr_login_url=$(terraform output -raw acr_login_server)" >> $GITHUB_ENV
+        echo "acr_username=$(terraform output -raw acr_admin_username)" >> $GITHUB_ENV
+        echo "acr_password=$(terraform output -raw acr_admin_password)" >> $GITHUB_ENV
+        echo "aks_kubeconfig=$(terraform output -raw aks_kubeconfig)" >> $GITHUB_ENV
+
+    # Step 8: Convert outputs to GitHub Secrets
+    - name: Create GitHub Secrets
+      run: |
+        # Function to encrypt secrets
+        function create_or_update_secret {
+          local secret_name=$1
+          local secret_value=$2
+          echo "Creating or updating secret: $secret_name"
+          
+          curl -X PUT \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"encrypted_value\": \"$secret_value\", \"key_id\": \"$key_id\"}" \
+            https://api.github.com/repos/${{ github.repository }}/actions/secrets/$secret_name
+        }
+
+        # Get public key used to encrypt secrets
+        key_response=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/actions/secrets/public-key)
+        key_id=$(echo $key_response | jq -r '.key_id')
+        key=$(echo $key_response | jq -r '.key')
+
+        # Encrypt the secrets
+        acr_login_url_encrypted=$(echo "${{ env.acr_login_url }}" | openssl rsautl -encrypt -pubin -inkey <(echo "$key") | base64)
+        acr_username_encrypted=$(echo "${{ env.acr_username }}" | openssl rsautl -encrypt -pubin -inkey <(echo "$key") | base64)
+        acr_password_encrypted=$(echo "${{ env.acr_password }}" | openssl rsautl -encrypt -pubin -inkey <(echo "$key") | base64)
+        aks_kubeconfig_encrypted=$(echo "${{ env.aks_kubeconfig }}" | openssl rsautl -encrypt -pubin -inkey <(echo "$key") | base64)
+
+        # Create or update secrets in GitHub repository
+        create_or_update_secret "CONTAINER_REGISTRY" "$acr_login_url_encrypted"
+        create_or_update_secret "REGISTRY_UN" "$acr_username_encrypted"
+        create_or_update_secret "REGISTRY_PW" "$acr_password_encrypted"
+        create_or_update_secret "KUBE_CONFIG" "$aks_kubeconfig_encrypted"
+
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
