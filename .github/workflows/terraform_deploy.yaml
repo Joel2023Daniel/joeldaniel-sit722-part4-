@@ -1,4 +1,4 @@
-name: Terraform Build Test
+name: Terraform Build
 
 on:
   workflow_dispatch:
